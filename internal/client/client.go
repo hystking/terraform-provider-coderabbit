@@ -38,9 +38,8 @@ type Client struct {
 	RetryConfig RetryConfig
 
 	// Cache for seats response (valid for single terraform run)
-	seatsCache     *SeatsResponse
-	seatsCacheMu   sync.RWMutex
-	seatsCacheOnce sync.Once
+	seatsCache   *SeatsResponse
+	seatsCacheMu sync.RWMutex
 }
 
 // NewClient creates a new CodeRabbit API client
