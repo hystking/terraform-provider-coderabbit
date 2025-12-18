@@ -43,6 +43,10 @@ provider "coderabbit" {
 
   # Optional: Custom API endpoint (default: https://api.coderabbit.ai)
   # base_url = "https://api.coderabbit.ai"
+
+  # Optional: GitHub token for API authentication (higher rate limits)
+  # Can also be set via GITHUB_TOKEN environment variable
+  # github_token = "ghp_xxxxxxxxxxxx"
 }
 ```
 
@@ -52,6 +56,7 @@ provider "coderabbit" {
 |----------|-------------|
 | `CODERABBITAI_API_KEY` | CodeRabbit API authentication key |
 | `CODERABBIT_BASE_URL` | API base URL (optional) |
+| `GITHUB_TOKEN` | GitHub personal access token for higher rate limits (optional) |
 
 ### Assigning Seats
 

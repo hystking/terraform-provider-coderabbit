@@ -32,15 +32,17 @@ func DefaultRetryConfig() RetryConfig {
 type Client struct {
 	APIKey      string
 	BaseURL     string
+	GitHubToken string
 	HTTPClient  *http.Client
 	RetryConfig RetryConfig
 }
 
 // NewClient creates a new CodeRabbit API client
-func NewClient(apiKey, baseURL string) *Client {
+func NewClient(apiKey, baseURL, githubToken string) *Client {
 	return &Client{
-		APIKey:  apiKey,
-		BaseURL: baseURL,
+		APIKey:      apiKey,
+		BaseURL:     baseURL,
+		GitHubToken: githubToken,
 		HTTPClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
@@ -191,6 +193,9 @@ func (c *Client) GetGitUserID(githubID string) (string, error) {
 		}
 
 		req.Header.Set("Accept", "application/vnd.github+json")
+		if c.GitHubToken != "" {
+			req.Header.Set("Authorization", "Bearer "+c.GitHubToken)
+		}
 
 		resp, err := c.HTTPClient.Do(req)
 		if err != nil {

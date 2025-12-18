@@ -48,3 +48,7 @@ internal/
 - `POST /v1/seats/unassign` - Unassign seat from user
 
 API docs: https://api.coderabbit.ai/v1/docs/
+
+## Documentation
+
+When modifying usage or behavior, always update `README.md` to reflect the changes.
