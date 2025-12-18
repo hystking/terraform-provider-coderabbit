@@ -158,7 +158,7 @@ func (c *Client) doRequest(method, path string, body any) ([]byte, error) {
 		}
 
 		respBody, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		if err != nil {
 			lastErr = fmt.Errorf("failed to read response body: %w", err)
 			continue
@@ -209,7 +209,7 @@ func (c *Client) GetGitUserID(githubID string) (string, error) {
 		}
 
 		respBody, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
+		_ = resp.Body.Close()
 		if err != nil {
 			lastErr = fmt.Errorf("failed to read GitHub API response: %w", err)
 			continue
