@@ -21,8 +21,9 @@ type CodeRabbitProvider struct {
 }
 
 type CodeRabbitProviderModel struct {
-	APIKey  types.String `tfsdk:"api_key"`
-	BaseURL types.String `tfsdk:"base_url"`
+	APIKey      types.String `tfsdk:"api_key"`
+	BaseURL     types.String `tfsdk:"base_url"`
+	GitHubToken types.String `tfsdk:"github_token"`
 }
 
 func New(version string) func() provider.Provider {
@@ -50,6 +51,11 @@ func (p *CodeRabbitProvider) Schema(ctx context.Context, req provider.SchemaRequ
 			"base_url": schema.StringAttribute{
 				Description: "Base URL for CodeRabbit API. Defaults to https://api.coderabbit.ai. Can also be set via CODERABBIT_BASE_URL environment variable.",
 				Optional:    true,
+			},
+			"github_token": schema.StringAttribute{
+				Description: "GitHub personal access token for GitHub API authentication. Can also be set via GITHUB_TOKEN environment variable. If not set, GitHub API requests will be unauthenticated (lower rate limits).",
+				Optional:    true,
+				Sensitive:   true,
 			},
 		},
 	}
@@ -88,8 +94,14 @@ func (p *CodeRabbitProvider) Configure(ctx context.Context, req provider.Configu
 		baseURL = "https://api.coderabbit.ai"
 	}
 
+	// Get GitHub token from config or environment variable
+	githubToken := os.Getenv("GITHUB_TOKEN")
+	if !config.GitHubToken.IsNull() {
+		githubToken = config.GitHubToken.ValueString()
+	}
+
 	// Create API client
-	c := client.NewClient(apiKey, baseURL)
+	c := client.NewClient(apiKey, baseURL, githubToken)
 
 	// Make the client available to resources and data sources
 	resp.DataSourceData = c
