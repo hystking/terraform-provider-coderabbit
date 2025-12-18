@@ -7,6 +7,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"sync"
 	"time"
 )
 
@@ -35,6 +36,11 @@ type Client struct {
 	GitHubToken string
 	HTTPClient  *http.Client
 	RetryConfig RetryConfig
+
+	// Cache for seats response (valid for single terraform run)
+	seatsCache     *SeatsResponse
+	seatsCacheMu   sync.RWMutex
+	seatsCacheOnce sync.Once
 }
 
 // NewClient creates a new CodeRabbit API client
@@ -234,8 +240,26 @@ func (c *Client) GetGitUserID(githubID string) (string, error) {
 	return "", fmt.Errorf("GitHub API request failed after %d retries: %w", c.RetryConfig.MaxRetries, lastErr)
 }
 
-// GetSeats retrieves all seat assignments
+// GetSeats retrieves all seat assignments (cached for the lifetime of the client)
 func (c *Client) GetSeats() (*SeatsResponse, error) {
+	// Check cache first with read lock
+	c.seatsCacheMu.RLock()
+	if c.seatsCache != nil {
+		cached := c.seatsCache
+		c.seatsCacheMu.RUnlock()
+		return cached, nil
+	}
+	c.seatsCacheMu.RUnlock()
+
+	// Fetch from API with write lock
+	c.seatsCacheMu.Lock()
+	defer c.seatsCacheMu.Unlock()
+
+	// Double-check after acquiring write lock
+	if c.seatsCache != nil {
+		return c.seatsCache, nil
+	}
+
 	respBody, err := c.doRequest(http.MethodGet, "/seats/", nil)
 	if err != nil {
 		return nil, err
@@ -246,7 +270,15 @@ func (c *Client) GetSeats() (*SeatsResponse, error) {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 
+	c.seatsCache = &seats
 	return &seats, nil
+}
+
+// InvalidateSeatsCache clears the seats cache, forcing a fresh fetch on next GetSeats call
+func (c *Client) InvalidateSeatsCache() {
+	c.seatsCacheMu.Lock()
+	defer c.seatsCacheMu.Unlock()
+	c.seatsCache = nil
 }
 
 // AssignSeat assigns a seat to a user
@@ -265,6 +297,9 @@ func (c *Client) AssignSeat(gitUserID string) error {
 	if !success.Success {
 		return fmt.Errorf("seat assignment failed")
 	}
+
+	// Invalidate cache since seat state changed
+	c.InvalidateSeatsCache()
 
 	return nil
 }
@@ -285,6 +320,9 @@ func (c *Client) UnassignSeat(gitUserID string) error {
 	if !success.Success {
 		return fmt.Errorf("seat unassignment failed")
 	}
+
+	// Invalidate cache since seat state changed
+	c.InvalidateSeatsCache()
 
 	return nil
 }
