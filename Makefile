@@ -1,4 +1,4 @@
-.PHONY: build install test clean
+.PHONY: build install test clean lint
 
 HOSTNAME=registry.terraform.io
 NAMESPACE=coderabbitai
@@ -26,6 +26,9 @@ fmt:
 
 vet:
 	go vet ./...
+
+lint:
+	golangci-lint run
 
 .PHONY: deps
 deps:
